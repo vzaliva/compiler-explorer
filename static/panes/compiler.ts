@@ -81,6 +81,15 @@ import {LLVMIrBackendOptions} from '../compilation/ir.interfaces.js';
 import {InstructionSet} from '../instructionsets.js';
 import {escapeHTML} from '../../shared/common-utils.js';
 import {CompilerVersionInfo, setCompilerVersionPopoverForPane} from '../widgets/compiler-version-info.js';
+// @ts-ignore
+import { Theme } from "monaco-tree-sitter";
+//Theme.load(require("monaco-tree-sitter/themes/tomorrow"));
+import Parser = require("web-tree-sitter");
+import treeSitterCore from "./tree-sitter-core.wasm"; // Path to the language parser library WASM file
+
+(async () => {
+    await Parser.init().then(/* initialized */);
+  })();
 
 const toolIcons = require.context('../../views/resources/logos', false, /\.(png|svg)$/);
 
@@ -373,6 +382,8 @@ export class Compiler extends MonacoPane<monaco.editor.IStandaloneCodeEditor, Co
     }
 
     override createEditor(editorRoot: HTMLElement) {
+        console.log('Creating editor for compiler', editorRoot);
+
         this.editor = monaco.editor.create(
             editorRoot,
             monacoConfig.extendConfig(

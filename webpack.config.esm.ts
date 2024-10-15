@@ -130,6 +130,7 @@ export default {
         },
         fallback: {
             path: 'path-browserify',
+            fs: false,
         },
         modules: ['./static', './node_modules'],
         extensions: ['.ts', '.js'],
@@ -167,6 +168,11 @@ export default {
     parallelism: parallelism,
     module: {
         rules: [
+            {
+                test: /\.wasm$/,
+                loader: "file-loader",
+                type: "javascript/auto" // Disable Webpack's built-in WASM loader
+            },
             {
                 test: /\.s?css$/,
                 use: [
