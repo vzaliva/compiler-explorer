@@ -85,6 +85,7 @@ import {CompilerVersionInfo, setCompilerVersionPopoverForPane} from '../widgets/
 import { Theme } from "monaco-tree-sitter";
 //Theme.load(require("monaco-tree-sitter/themes/tomorrow"));
 import Parser = require("web-tree-sitter");
+// @ts-ignore
 import treeSitterCore from "./tree-sitter-core.wasm"; // Path to the language parser library WASM file
 
 (async () => {
