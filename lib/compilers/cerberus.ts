@@ -142,7 +142,7 @@ export class CerberusCompiler extends BaseCompiler {
             return [{text: result.asm, source: null}];
         }
 
-        const core = result.asm; //.replace(/\n{3,}/g, '\n\n');
+        const core = result.asm.replace(/\n{3,}/g, '\n\n');
 
         const parser = new Parser();
         parser.setLanguage(coreLanguage);
