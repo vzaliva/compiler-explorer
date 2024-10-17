@@ -89,7 +89,9 @@
     "winston-loki": "^6.1.2",
     "winston-papertrail": "^1.0.5",
     "winston-transport": "^4.7.1",
-    "yaml": "^2.5.1"
+    "yaml": "^2.5.1",
+    "tree-sitter": "^0.21.1",
+    "tree-sitter-core": "^1.0.0"
   },
   "devDependencies": {
     "@smithy/util-stream": "^3.1.8",
