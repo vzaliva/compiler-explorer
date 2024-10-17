@@ -36,6 +36,17 @@ import {CompilationEnvironment} from '../compilation-env.js';
 import {logger} from '../logger.js';
 import * as utils from '../utils.js';
 
+type Range = {
+    start: Parser.Point;
+    end: Parser.Point;
+  };
+
+type LocationRange = {
+    location: Range;
+    cursor: Range | Parser.Point | null;
+};
+
+
 export class CerberusCompiler extends BaseCompiler {
     static get key() {
         return 'cerberus';
@@ -117,19 +128,101 @@ export class CerberusCompiler extends BaseCompiler {
         }
     }
 
+    private parse_position(node:Parser.SyntaxNode): Parser.Point|null
+    {
+        if(node.type !== 'position')
+            return null;
+
+        const filenameNode = node.childForFieldName('filename');
+        if (!filenameNode || filenameNode.text !== 'example.c')    
+            return null;
+        
+        const rowNode = node.childForFieldName('line');
+        const columnNode = node.childForFieldName('column');
+        if (!rowNode || !columnNode) 
+            return null;
+
+        const row = parseInt(rowNode.text, 10);
+        const column = parseInt(columnNode.text, 10);
+        if(isNaN(row) || isNaN(column))  
+            return null;
+
+        return {row: row, column: column};
+    };
+
+    /* Attempt to parse 'location' node.
+       Returns null if the node does not correspond to location range.        
+     */
+    private parse_location(node:Parser.SyntaxNode): LocationRange|null
+    {
+        if(node.firstNamedChild === null || node.firstNamedChild.type !== 'location_range')
+            return null;
+
+
+        const startNode = node.firstNamedChild.childForFieldName('start');
+        const endNode = node.firstNamedChild.childForFieldName('end');
+        if (!startNode || !endNode)
+            return null;
+
+        const start = this.parse_position(startNode);
+        const end = this.parse_position(endNode);
+        if(!start || !end) 
+            return null;
+
+        const startCursorNode = node.firstNamedChild.childForFieldName('start_cursor');
+        if (!startCursorNode)    
+            return {location: {start: start, end: end}, cursor: null};
+        const start_cursor = this.parse_position(startCursorNode);
+        if (!start_cursor)    
+            return {location: {start: start, end: end}, cursor: null};
+
+        const endCursorNode = node.firstNamedChild.childForFieldName('end_cursor');
+        if (!endCursorNode)    
+            return {location: {start: start, end: end}, cursor: start_cursor};
+        const end_cursor = this.parse_position(endCursorNode);
+        if (!end_cursor)    
+            return {location: {start: start, end: end}, cursor: start_cursor};
+        else            
+            return {location: {start: start, end: end}, cursor: {start:start_cursor, end:end_cursor}};
+    }
+
+    private point_to_string(point:Parser.Point): string
+    {
+        return `${point.row}:${point.column}`;
+    }
+
+    private range_to_string(range:Range): string
+    {
+        return `${this.point_to_string(range.start)}-${this.point_to_string(range.end)}`;
+    }
+
+    private location_range_to_string(loc:LocationRange): string
+    {
+        const location = this.range_to_string(loc.location);
+        if(loc.cursor === null)
+            return location;
+        else
+            if(loc.cursor instanceof Object && 'start' in loc.cursor && 'end' in loc.cursor) 
+                return `${location} [${this.range_to_string(loc.cursor)}]`;
+            else
+                return `${location} [${this.point_to_string(loc.cursor)}]`;
+
+    }
+
     private annotate_ast(node:Parser.SyntaxNode): Parser.SyntaxNode
     {
-        var loc:Parser.SyntaxNode|null = null;
+        var loc:LocationRange|null = null;
         for (const n of node.children) {
             if(n.type === 'location')
             {
-                loc = n;
+                loc = this.parse_location(n);
             } else {
-                if(loc !== null)
+                if(loc !== null && n.isNamed)
                 {
+                    //console.log(`Annotating ${n.type} with location ${this.location_range_to_string(loc)}`);
                     (n as any).loc = loc;
+                    loc = null;
                 }
-                loc = null;
                 this.annotate_ast(n);
             }
         }
@@ -149,7 +242,7 @@ export class CerberusCompiler extends BaseCompiler {
         
         const tree = parser.parse(core);
         const ast = this.annotate_ast(tree.rootNode);
-        console.log(ast.toString());        
+        console.log(ast);        
 
         const lines = core.split('\n');
         const plines = lines.map((l: string) => ({text: l}));
