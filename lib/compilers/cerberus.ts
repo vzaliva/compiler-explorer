@@ -117,6 +117,25 @@ export class CerberusCompiler extends BaseCompiler {
         }
     }
 
+    private annotate_ast(node:Parser.SyntaxNode): Parser.SyntaxNode
+    {
+        var loc:Parser.SyntaxNode|null = null;
+        for (const n of node.children) {
+            if(n.type === 'location')
+            {
+                loc = n;
+            } else {
+                if(loc !== null)
+                {
+                    (n as any).loc = loc;
+                }
+                loc = null;
+                this.annotate_ast(n);
+            }
+        }
+        return node;
+    }
+
     override async processAsm(result) {
         // Handle "error" documents.
         if (!result.asm.includes('\n') && result.asm[0] === '<') {
@@ -128,8 +147,9 @@ export class CerberusCompiler extends BaseCompiler {
         const parser = new Parser();
         parser.setLanguage(coreLanguage);
         
-        const ast = parser.parse(core);
-        console.log(ast.rootNode.toString());        
+        const tree = parser.parse(core);
+        const ast = this.annotate_ast(tree.rootNode);
+        console.log(ast.toString());        
 
         const lines = core.split('\n');
         const plines = lines.map((l: string) => ({text: l}));
