@@ -123,14 +123,16 @@ export class CerberusCompiler extends BaseCompiler {
             return [{text: result.asm, source: null}];
         }
 
+        const core = result.asm.replace(/\n{3,}/g, '\n\n');
+
         const parser = new Parser();
         parser.setLanguage(coreLanguage);
         
-        const tree = parser.parse(result.asm);
-        //console.log(tree.rootNode.toString());        
+        const ast = parser.parse(core);
+        console.log(ast.rootNode.toString());        
 
-        const lines = result.asm.split('\n');
-        const plines = lines.map(l => ({text: l}));
+        const lines = core.split('\n');
+        const plines = lines.map((l: string) => ({text: l}));
         return {
             asm: plines,
             languageId: 'core',
