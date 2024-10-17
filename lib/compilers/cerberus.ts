@@ -24,6 +24,9 @@
 
 import path from 'path';
 
+import Parser from 'tree-sitter';
+import coreLanguage from 'tree-sitter-core';
+
 import {BypassCache, CacheKey, ExecutionOptions} from '../../types/compilation/compilation.interfaces.js';
 import type {PreliminaryCompilerInfo} from '../../types/compiler.interfaces.js';
 import {ExecutableExecutionOptions} from '../../types/execution/execution.interfaces.js';
@@ -73,7 +76,7 @@ export class CerberusCompiler extends BaseCompiler {
             customCwd: (result.dirPath as string) || path.dirname(outputFilename),
         };
 
-        const args = ['--pp=core', outputFilename];
+        const args = ['--pp_flags=loc --pp=core', outputFilename];
 
         const objResult = await this.exec(this.compiler.objdumper, args, execOptions);
         if (objResult.code === 0) {
@@ -119,6 +122,12 @@ export class CerberusCompiler extends BaseCompiler {
         if (!result.asm.includes('\n') && result.asm[0] === '<') {
             return [{text: result.asm, source: null}];
         }
+
+        const parser = new Parser();
+        parser.setLanguage(coreLanguage);
+        
+        const tree = parser.parse(result.asm);
+        //console.log(tree.rootNode.toString());        
 
         const lines = result.asm.split('\n');
         const plines = lines.map(l => ({text: l}));
