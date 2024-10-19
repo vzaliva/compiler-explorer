@@ -35,6 +35,7 @@ import {BaseCompiler} from '../base-compiler.js';
 import {CompilationEnvironment} from '../compilation-env.js';
 import {logger} from '../logger.js';
 import * as utils from '../utils.js';
+import { AsmResultSource, ParsedAsmResultLine } from '../../types/asmresult/asmresult.interfaces.js';
 
 type Range = {
     start: Parser.Point;
@@ -219,7 +220,7 @@ export class CerberusCompiler extends BaseCompiler {
             } else {
                 if(loc !== null && n.isNamed)
                 {
-                    //console.log(`Annotating ${n.type} with location ${this.location_range_to_string(loc)}`);
+                    console.log(`Annotating ${n.type} at ${this.point_to_string(n.startPosition)}-${this.point_to_string(n.endPosition)} with location ${this.location_range_to_string(loc)}`);
                     (n as any).loc = loc;
                     loc = null;
                 }
@@ -229,6 +230,28 @@ export class CerberusCompiler extends BaseCompiler {
         return node;
     }
 
+    findNodesByRange(node: Parser.SyntaxNode, range: Range): Parser.SyntaxNode[] {
+        const matchingNodes: Parser.SyntaxNode[] = [];
+
+        function search(node: Parser.SyntaxNode): void {
+            if (
+                (node.startPosition.row < range.start.row || 
+                (node.startPosition.row === range.start.row && node.startPosition.column <= range.start.column)) &&
+                (node.endPosition.row > range.end.row || 
+                (node.endPosition.row === range.end.row && node.endPosition.column >= range.end.column))
+            ) {
+                matchingNodes.push(node);
+            }
+
+            for (const child of node.children) {
+                search(child);
+            }
+        }
+
+        search(node);
+        return matchingNodes.reverse();
+    }
+
     override async processAsm(result) {
         // Handle "error" documents.
         if (!result.asm.includes('\n') && result.asm[0] === '<') {
@@ -236,19 +259,38 @@ export class CerberusCompiler extends BaseCompiler {
         }
 
         const core = result.asm.replace(/\n{3,}/g, '\n\n');
-
         const parser = new Parser();
         parser.setLanguage(coreLanguage);
         
         const tree = parser.parse(core);
         const ast = this.annotate_ast(tree.rootNode);
-        console.log(ast);        
 
         const lines = core.split('\n');
-        const plines = lines.map((l: string) => ({text: l}));
+        const plines: ParsedAsmResultLine[] = lines.map((l: string, n: number) => {
+            const ltrimmed = l.trimStart();
+            const rtrimmed = ltrimmed.trimEnd();
+            const start_col = l.length - ltrimmed.length;
+            const r:Range = {start: {row: n, column: start_col}, end: {row: n, column: start_col+rtrimmed.length}};        
+            const matchingNodes = this.findNodesByRange(ast, r);
+            const coreNode = matchingNodes.find(node => (node as any).loc !== undefined);
+            if (coreNode === undefined) {
+                console.log(`No node with location for ${this.range_to_string(r)}`);
+                return { text: l };
+            } else {                
+                const loc:LocationRange = (coreNode as any).loc;
+                console.log(`Found ${coreNode.type} at ${this.point_to_string(coreNode.startPosition)}-${this.point_to_string(coreNode.endPosition)} for ${this.range_to_string(r)} with location ${this.location_range_to_string(loc)}`);
+                const src:AsmResultSource = {
+                    file: null, 
+                    line: loc.location.start.row, 
+                    column: loc.location.start.column
+                };
+                return { text: l, source: src };
+            }
+        });
         return {
             asm: plines,
             languageId: 'core',
         };
     }
+  
 }
