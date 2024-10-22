@@ -33,12 +33,14 @@ import bodyParser from 'body-parser';
 import compression from 'compression';
 import express from 'express';
 import fs from 'fs-extra';
+// @ts-expect-warning
 import morgan from 'morgan';
 import nopt from 'nopt';
 import PromClient from 'prom-client';
 import responseTime from 'response-time';
 import sanitize from 'sanitize-filename';
 import sFavicon from 'serve-favicon';
+// @ts-expect-warning
 import systemdSocket from 'systemd-socket';
 import _ from 'underscore';
 import urljoin from 'url-join';
@@ -746,41 +748,6 @@ async function main() {
 
     // Based on combined format, but: GDPR compliant IP, no timestamp & no unused fields for our usecase
     const morganFormat = isDevMode() ? 'dev' : ':gdpr_ip ":method :url" :status';
-
-    /*
-     * This is a workaround to make cross origin monaco web workers function
-     * in spite of the monaco webpack plugin hijacking the MonacoEnvironment global.
-     *
-     * see https://github.com/microsoft/monaco-editor-webpack-plugin/issues/42
-     *
-     * This workaround wouldn't be so bad, if it didn't _also_ rely on *another* bug to
-     * actually work.
-     *
-     * The webpack plugin incorrectly uses
-     *     window.__webpack_public_path__
-     * when it should use
-     *     __webpack_public_path__
-     *
-     * see https://github.com/microsoft/monaco-editor-webpack-plugin/pull/63
-     *
-     * We can leave __webpack_public_path__ with the correct value, which lets runtime chunk
-     * loading continue to function correctly.
-     *
-     * We can then set window.__webpack_public_path__ to the below handler, which lets us
-     * fabricate a worker on the fly.
-     *
-     * This is bad and I feel bad.
-     *
-     * This should no longer be needed, but is left here for safety because people with
-     * workers already installed from this url may still try to hit this page for some time
-     *
-     * TODO: remove this route in the future now that it is not needed
-     */
-    router.get('/workers/:worker', (req, res) => {
-        staticHeaders(res);
-        res.set('Content-Type', 'application/javascript');
-        res.end(`importScripts('${urljoin(staticRoot, req.params.worker)}');`);
-    });
 
     router
         .use(

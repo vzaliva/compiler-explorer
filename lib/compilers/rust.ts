@@ -27,7 +27,7 @@ import path from 'path';
 import {SemVer} from 'semver';
 import _ from 'underscore';
 
-import {CompileChildLibraries, ExecutionOptions} from '../../types/compilation/compilation.interfaces.js';
+import {CompileChildLibraries, ExecutionOptionsWithEnv} from '../../types/compilation/compilation.interfaces.js';
 import {CompilerOverrideType, ConfiguredOverrides} from '../../types/compilation/compiler-overrides.interfaces.js';
 import {LLVMIrBackendOptions} from '../../types/compilation/ir.interfaces.js';
 import type {PreliminaryCompilerInfo} from '../../types/compiler.interfaces.js';
@@ -185,7 +185,11 @@ export class RustCompiler extends BaseCompiler {
         }
     }
 
-    override fixIncompatibleOptions(options: string[], userOptions: string[], overrides: ConfiguredOverrides): void {
+    override fixIncompatibleOptions(
+        options: string[],
+        userOptions: string[],
+        overrides: ConfiguredOverrides,
+    ): [string[], ConfiguredOverrides] {
         if (userOptions.filter(option => option.startsWith('--color=')).length > 0) {
             options = options.filter(option => !option.startsWith('--color='));
         }
@@ -199,6 +203,8 @@ export class RustCompiler extends BaseCompiler {
                 // Prefer the options edition over the overrides
                 overrides.splice(editionOverrideIdx, 1);
         }
+
+        return [options, overrides];
     }
 
     override optionsForBackend(backendOptions: Record<string, any>, outputFilename: string) {
@@ -252,7 +258,7 @@ export class RustCompiler extends BaseCompiler {
         return outputFilename;
     }
 
-    override getArgumentParser() {
+    override getArgumentParserClass() {
         return RustParser;
     }
 
@@ -272,7 +278,7 @@ export class RustCompiler extends BaseCompiler {
         compiler: string,
         options: string[],
         inputFilename: string,
-        execOptions: ExecutionOptions & {env: Record<string, string>},
+        execOptions: ExecutionOptionsWithEnv,
     ) {
         // bug #5630: in presence of `--emit mir=..` rustc does not produce an executable.
         const newOptions = options.filter(

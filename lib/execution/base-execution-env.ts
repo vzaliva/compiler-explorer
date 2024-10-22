@@ -28,7 +28,12 @@ import path from 'path';
 import fs from 'fs-extra';
 import temp from 'temp';
 
-import {BuildResult, ExecutionOptions, ExecutionParams} from '../../types/compilation/compilation.interfaces.js';
+import {
+    BuildResult,
+    ExecutionOptions,
+    ExecutionOptionsWithEnv,
+    ExecutionParams,
+} from '../../types/compilation/compilation.interfaces.js';
 import {
     BasicExecutionResult,
     ConfiguredRuntimeTool,
@@ -126,7 +131,7 @@ export class LocalExecutionEnvironment implements IExecutionEnvironment {
         this.buildResult = await this.loadPackageWithExecutable(hash, this.dirPath);
     }
 
-    protected getDefaultExecOptions(params: ExecutionParams): ExecutionOptions & {env: Record<string, string>} {
+    protected getDefaultExecOptions(params: ExecutionParams): ExecutionOptionsWithEnv {
         const env: Record<string, string> = {};
         env.PATH = '';
 
@@ -134,7 +139,7 @@ export class LocalExecutionEnvironment implements IExecutionEnvironment {
             const runtimeEnv = params.runtimeTools.find(tool => tool.name === RuntimeToolType.env);
             if (runtimeEnv) {
                 for (const opt of runtimeEnv.options) {
-                    env[(opt.name = opt.value)];
+                    env[opt.name] = opt.value;
                 }
             }
         }
@@ -152,7 +157,7 @@ export class LocalExecutionEnvironment implements IExecutionEnvironment {
             else env.PATH = this.buildResult.defaultExecOptions.env.PATH;
         }
 
-        const execOptions: ExecutionOptions & {env: Record<string, string>} = {
+        const execOptions: ExecutionOptionsWithEnv = {
             env,
         };
 
@@ -226,7 +231,7 @@ export class LocalExecutionEnvironment implements IExecutionEnvironment {
 
             return this.execBinaryMaybeWrapped(
                 executable,
-                executeParameters.args,
+                executeParameters.args as string[],
                 execOptions,
                 executeParameters,
                 homeDir,

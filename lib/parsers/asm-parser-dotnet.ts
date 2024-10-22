@@ -22,6 +22,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import {ParseFiltersAndOutputOptions} from '../../types/features/filters.interfaces.js';
 import * as utils from '../utils.js';
 
 import {IAsmParser} from './asm-parser.interfaces.js';
@@ -38,12 +39,12 @@ export class DotNetAsmParser implements IAsmParser {
         const allAvailable: string[] = [];
         const usedLabels: string[] = [];
 
-        const methodRefRe = /^\w+\s+\[(.*)]/g;
-        const tailCallRe = /^tail\.jmp\s+\[.*?](.*)/g;
+        const methodRefRe = /^(call|jmp|tail\.jmp)\s+(.*)/g;
         const labelRefRe = /^\w+\s+.*?(G_M\w+)/g;
+        const removeCommentAndWsRe = /^\s*(?<line>.*?)(\s*;.*)?\s*$/;
 
         for (const line in asmLines) {
-            const trimmedLine = asmLines[line].trim();
+            const trimmedLine = removeCommentAndWsRe.exec(asmLines[line])?.groups?.line;
             if (!trimmedLine || trimmedLine.startsWith(';')) continue;
             if (trimmedLine.endsWith(':')) {
                 if (trimmedLine.includes('(')) {
@@ -74,13 +75,21 @@ export class DotNetAsmParser implements IAsmParser {
                 usedLabels.push(labelResult.value[1]);
             }
 
-            let methodResult = trimmedLine.matchAll(methodRefRe).next();
-            if (methodResult.done) methodResult = trimmedLine.matchAll(tailCallRe).next();
+            const methodResult = trimmedLine.matchAll(methodRefRe).next();
             if (!methodResult.done) {
-                const name = methodResult.value[1];
+                let name = methodResult.value[2];
+                if (name.startsWith('[')) {
+                    if (name.endsWith(']')) {
+                        // cases like `call [Foo]`, `jmp [Foo]`, `tail.jmp [Foo]`
+                        name = name.substring(1, name.length - 1);
+                    } else if (name.includes(']')) {
+                        // cases like `tail.jmp [rax]Foo`
+                        name = name.substring(name.indexOf(']') + 1);
+                    }
+                }
                 const index = asmLines[line].indexOf(name) + 1;
                 methodUsage[line] = {
-                    name: methodResult.value[1],
+                    name: name,
                     range: {startCol: index, endCol: index + name.length},
                 };
             }
@@ -124,7 +133,7 @@ export class DotNetAsmParser implements IAsmParser {
         return cleanedAsm;
     }
 
-    process(asmResult: string, filters) {
+    process(asmResult: string, filters: ParseFiltersAndOutputOptions) {
         const startTime = process.hrtime.bigint();
 
         const asm: {
@@ -142,7 +151,7 @@ export class DotNetAsmParser implements IAsmParser {
             asmLines = asmLines.flatMap(l => (commentRe.test(l) ? [] : [l]));
         }
 
-        const result = this.scanLabelsAndMethods(asmLines, filters.labels);
+        const result = this.scanLabelsAndMethods(asmLines, filters.labels!);
 
         for (const i in result.labelDef) {
             const label = result.labelDef[i];

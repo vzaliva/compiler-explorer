@@ -30,6 +30,7 @@ import type {
     CompilationResult,
     CompileChildLibraries,
     ExecutionOptions,
+    ExecutionOptionsWithEnv,
 } from '../../types/compilation/compilation.interfaces.js';
 import type {
     OptPipelineBackendOptions,
@@ -118,7 +119,7 @@ export class RacketCompiler extends BaseCompiler {
         compiler: string,
         options: string[],
         inputFilename: string,
-        execOptions: ExecutionOptions & {env: Record<string, string>},
+        execOptions: ExecutionOptionsWithEnv,
     ): Promise<CompilationResult> {
         if (!execOptions) {
             execOptions = this.getDefaultExecOptions();
@@ -174,7 +175,7 @@ export class RacketCompiler extends BaseCompiler {
         return result;
     }
 
-    override async processAsm(result: any, filters: any, options: any) {
+    override async processAsm(result: any, filters: ParseFiltersAndOutputOptions, options: string[]) {
         // TODO: Process and highlight decompiled output
         return {
             asm: [{text: result.asm}],
@@ -256,7 +257,7 @@ export class RacketCompiler extends BaseCompiler {
     }
 
     override async processOptPipeline(
-        output,
+        output: CompilationResult,
         filters: ParseFiltersAndOutputOptions,
         optPipelineOptions: OptPipelineBackendOptions,
         debugPatched?: boolean,

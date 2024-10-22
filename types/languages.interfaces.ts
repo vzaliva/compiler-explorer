@@ -54,12 +54,14 @@ export type LanguageKey =
     | 'fortran'
     | 'fsharp'
     | 'gimple'
+    | 'glsl'
     | 'go'
     | 'haskell'
     | 'hlsl'
     | 'hook'
     | 'hylo'
     | 'ispc'
+    | 'il'
     | 'jakt'
     | 'java'
     | 'julia'
@@ -91,7 +93,8 @@ export type LanguageKey =
     | 'vala'
     | 'vb'
     | 'wasm'
-    | 'zig';
+    | 'zig'
+    | 'ylc';
 
 export interface Language {
     /** Id of language. Added programmatically based on CELanguages key */

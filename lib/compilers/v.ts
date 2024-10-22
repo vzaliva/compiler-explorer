@@ -27,7 +27,7 @@ import path from 'path';
 import {
     CompilationResult,
     CompileChildLibraries,
-    ExecutionOptions,
+    ExecutionOptionsWithEnv,
 } from '../../types/compilation/compilation.interfaces.js';
 import {ParseFiltersAndOutputOptions} from '../../types/features/filters.interfaces.js';
 import {unwrap} from '../assert.js';
@@ -68,7 +68,7 @@ export class VCompiler extends BaseCompiler {
         return compilerOptions;
     }
 
-    override async processAsm(result: any, filters, options: string[]): Promise<any> {
+    override async processAsm(result: any, filters: ParseFiltersAndOutputOptions, options: string[]): Promise<any> {
         const backend = this.getBackendFromOptions(options);
         switch (backend) {
             case 'c':
@@ -101,7 +101,7 @@ export class VCompiler extends BaseCompiler {
         compiler: string,
         options: string[],
         inputFilename: string,
-        execOptions: ExecutionOptions & {env: Record<string, string>},
+        execOptions: ExecutionOptionsWithEnv,
         filters?: ParseFiltersAndOutputOptions,
     ): Promise<CompilationResult> {
         if (!execOptions) {
