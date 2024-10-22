@@ -130,6 +130,7 @@ export default {
         },
         fallback: {
             path: 'path-browserify',
+            fs: false,
         },
         modules: ['./static', './node_modules'],
         extensions: ['.ts', '.js', '.json'],
