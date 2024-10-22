@@ -82,6 +82,9 @@ import {escapeHTML} from '../../shared/common-utils.js';
 import {CompilerVersionInfo, setCompilerVersionPopoverForPane} from '../widgets/compiler-version-info.js';
 import {LanguageKey} from '../languages.interfaces.js';
 
+import { Theme } from 'monaco-tree-sitter';
+Theme.load(require('monaco-tree-sitter/themes/tomorrow'));
+
 const toolIcons = require.context('../../views/resources/logos', false, /\.(png|svg)$/);
 
 type CachedOpcode = {

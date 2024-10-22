@@ -132,7 +132,7 @@ export default {
             path: 'path-browserify',
         },
         modules: ['./static', './node_modules'],
-        extensions: ['.ts', '.js'],
+        extensions: ['.ts', '.js', '.json'],
         extensionAlias: {
             '.js': ['.ts', '.js'],
             '.mjs': ['.mts', '.mjs'],
@@ -199,7 +199,7 @@ export default {
             {
                 test: /\.js$/,
                 loader: 'source-map-loader',
-            },
+            }
         ],
     },
     plugins: plugins,
