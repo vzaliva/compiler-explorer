@@ -81,15 +81,20 @@ import {LLVMIrBackendOptions} from '../compilation/ir.interfaces.js';
 import {InstructionSet} from '../instructionsets.js';
 import {escapeHTML} from '../../shared/common-utils.js';
 import {CompilerVersionInfo, setCompilerVersionPopoverForPane} from '../widgets/compiler-version-info.js';
-// @ts-ignore
-import { Theme } from "monaco-tree-sitter";
-//Theme.load(require("monaco-tree-sitter/themes/tomorrow"));
-import Parser = require("web-tree-sitter");
-// @ts-ignore
-import treeSitterCore from "./tree-sitter-core.wasm"; // Path to the language parser library WASM file
+//import { Language, Theme } from 'monaco-tree-sitter';
+//Theme.load(require('monaco-tree-sitter/themes/tomorrow'));
+//@ts-ignore
+import { Language } from 'monaco-tree-sitter';
+import Parser = require('web-tree-sitter');
+import coreLanguage from 'tree-sitter-core';
+
 
 (async () => {
-    await Parser.init().then(/* initialized */);
+    await Parser.init();
+      // Load the language's grammar rules
+    const language = new Language(coreLanguage);
+    // Load the language's parser library's WASM binary
+    await language.init(coreLanguage, Parser);
   })();
 
 const toolIcons = require.context('../../views/resources/logos', false, /\.(png|svg)$/);
