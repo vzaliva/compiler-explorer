@@ -85,6 +85,8 @@ import { LanguageKey } from '../languages.interfaces.js';
 import { Theme } from 'monaco-tree-sitter';
 Theme.load(require('monaco-tree-sitter/themes/tomorrow'));
 
+//import treeSitterCore from 'tree-sitter-core/tree-sitter-core.wasm';
+
 import Parser = require('web-tree-sitter');
 (async () => {
     await Parser.init();

@@ -25,7 +25,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import {fileURLToPath} from 'url';
+import { fileURLToPath } from 'url';
 
 /* eslint-disable n/no-unpublished-import */
 import CopyWebpackPlugin from 'copy-webpack-plugin';
@@ -34,7 +34,7 @@ import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import MonacoEditorWebpackPlugin from 'monaco-editor-webpack-plugin';
 import TerserPlugin from 'terser-webpack-plugin';
 import Webpack from 'webpack';
-import {WebpackManifestPlugin} from 'webpack-manifest-plugin';
+import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 
 const __dirname = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
 const isDev = process.env.NODE_ENV !== 'production';
@@ -94,7 +94,7 @@ const plugins: Webpack.WebpackPluginInstance[] = [
         'window.PRODUCTION': JSON.stringify(!isDev),
     }),
     new CopyWebpackPlugin({
-        patterns: [{from: './static/favicons', to: path.resolve(distPath, 'static', 'favicons')}],
+        patterns: [{ from: './static/favicons', to: path.resolve(distPath, 'static', 'favicons') }],
     }),
 ];
 
@@ -133,7 +133,7 @@ export default {
             fs: false,
         },
         modules: ['./static', './node_modules'],
-        extensions: ['.ts', '.js', '.json'],
+        extensions: ['.ts', '.js', '.json', '.wasm'],
         extensionAlias: {
             '.js': ['.ts', '.js'],
             '.mjs': ['.mts', '.mjs'],
@@ -168,6 +168,12 @@ export default {
     parallelism: parallelism,
     module: {
         rules: [
+            // This is required for web-tree-sitter
+            {
+                test: /\.wasm$/,
+                loader: "file-loader",
+                type: "javascript/auto" // Disable Webpack's built-in WASM loader
+            },
             {
                 test: /\.s?css$/,
                 use: [
@@ -184,7 +190,7 @@ export default {
             {
                 test: /\.(png|woff|woff2|eot|ttf|svg)$/,
                 type: 'asset',
-                parser: {dataUrlCondition: {maxSize: 8192}},
+                parser: { dataUrlCondition: { maxSize: 8192 } },
             },
             {
                 test: /\.pug$/,
