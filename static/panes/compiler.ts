@@ -82,19 +82,12 @@ import {escapeHTML} from '../../shared/common-utils.js';
 import {CompilerVersionInfo, setCompilerVersionPopoverForPane} from '../widgets/compiler-version-info.js';
 import {LanguageKey} from '../languages.interfaces.js';
 
-import {Theme, Language} from 'monaco-tree-sitter';
+import {Theme, Language, MonacoTreeSitter} from 'monaco-tree-sitter';
 Theme.load(require('monaco-tree-sitter/themes/tomorrow'));
 
-import treeSitterCore from 'tree-sitter-core/tree-sitter-core.wasm';
-
 import Parser = require('web-tree-sitter');
-async () => {
-    await Parser.init();
-    // Load the language's grammar rules
-    const language = new Language(require('monaco-tree-sitter/grammars/cpp')); //TODO: need new grammar
-    // Load the language's parser library's WASM binary
-    await language.init(treeSitterCore, Parser);
-};
+
+import treeSitterCore from 'tree-sitter-core/tree-sitter-core.wasm';
 
 const toolIcons = require.context('../../views/resources/logos', false, /\.(png|svg)$/);
 
@@ -294,6 +287,8 @@ export class Compiler extends MonacoPane<monaco.editor.IStandaloneCodeEditor, Co
     private cursorSelectionThrottledFunction?: ((e: monaco.editor.ICursorSelectionChangedEvent) => void) & _.Cancelable;
     private mouseUpThrottledFunction?: ((e: monaco.editor.IEditorMouseEvent) => void) & _.Cancelable;
     private compilerShared: ICompilerShared;
+    // @ts-ignore
+    private monacoTreeSitter: MonacoTreeSitter;
 
     // eslint-disable-next-line max-statements
     constructor(hub: Hub, container: Container, state: MonacoPaneState & CompilerState) {
@@ -405,7 +400,15 @@ export class Compiler extends MonacoPane<monaco.editor.IStandaloneCodeEditor, Co
                 },
                 this.settings,
             ),
-        );
+        );        
+
+        Parser.init();
+        // Load the language's grammar rules
+        const language = new Language(require('./core-grammar.json'));
+        // Load the language's parser library's WASM binary
+        language.init(treeSitterCore, Parser);
+
+        this.monacoTreeSitter = new MonacoTreeSitter(monaco, this.editor, language);
     }
 
     override getPrintName() {
