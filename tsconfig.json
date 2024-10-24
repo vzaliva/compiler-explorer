@@ -1,3 +1,7 @@
 {
-  "extends": "./tsconfig.backend.json"
+  "extends": "./tsconfig.backend.json",
+
+  "include": [
+    "./static/panes/tree-sitter-core-wasm.d.ts",
+  ]
 }
